@@ -42,7 +42,7 @@ Installation
 
 In your Gemfile:
 
-    gem 'rack-affiliates', :git => 'git@github.com:rilla/rack-affiliates.git'
+    gem 'rack-affiliates', :git => 'git://github.com/rilla/rack-affiliates.git'
 
 
 Rails 3 Example Usage
