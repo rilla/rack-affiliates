@@ -5,13 +5,12 @@ module Rack
   # +env['affiliate.time'] if it detects a request came from an affiliated link 
   #
   class Affiliates
-    COOKIE_TAG = "aff_tag"
-    COOKIE_FROM = "aff_from"
-    COOKIE_TIME = "aff_time"
 
     def initialize(app, opts = {})
       @app = app
       @param = opts[:param] || "ref"
+      @scope = opts[:scope] || "affiliate"
+      @var_name = opts[:var_name] || "tag"
       @cookie_ttl = opts[:ttl] || 60*60*24*30  # 30 days
       @cookie_domain = opts[:domain] || nil
     end
@@ -20,7 +19,7 @@ module Rack
       req = Rack::Request.new(env)
 
       params_tag = req.params[@param]
-      cookie_tag = req.cookies[COOKIE_TAG]
+      cookie_tag = req.cookies[cookie_var_name]
 
       if cookie_tag
         tag, from, time = cookie_info(req)
@@ -31,9 +30,9 @@ module Rack
       end
 
       if tag
-        env["affiliate.tag"] = tag
-        env['affiliate.from'] = from
-        env['affiliate.time'] = time
+        env["#{@scope}.#{@var_name}"] = tag
+        env["#{@scope}.from"] = from
+        env["#{@scope}.time"] = time
       end
 
       status, headers, body = @app.call(env)
@@ -54,15 +53,31 @@ module Rack
     end
 
     def cookie_info(req)
-      [req.cookies[COOKIE_TAG], req.cookies[COOKIE_FROM], req.cookies[COOKIE_TIME].to_i] 
+      [req.cookies[cookie_var_name], req.cookies[cookie_from_name], req.cookies[cookie_time_name].to_i] 
+    end
+    
+    def cookie_prefix
+      @scope[0..3]
+    end
+
+    def cookie_var_name
+      "#{cookie_prefix}_#{@var_name}"
+    end
+    
+    def cookie_from_name
+      "#{cookie_prefix}_from"
+    end    
+    
+    def cookie_time_name
+      "#{cookie_prefix}_time"
     end
 
     protected
     def bake_cookies(headers, tag, from, time)
       expires = Time.now + @cookie_ttl
-      { COOKIE_TAG => tag, 
-        COOKIE_FROM => from, 
-        COOKIE_TIME => time }.each do |key, value|
+      { cookie_var_name => tag, 
+        cookie_from_name => from, 
+        cookie_time_name => time }.each do |key, value|
           cookie_hash = {:value => value, :expires => expires}
           cookie_hash[:domain] = @cookie_domain if @cookie_domain
           Rack::Utils.set_cookie_header!(headers, key, cookie_hash)
