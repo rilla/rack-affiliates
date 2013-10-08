@@ -3,6 +3,28 @@ Rack::Affiliates
 
 Rack::Affiliates is a rack middleware that extracts information about the referrals came from an affiliated site. Specifically, it looks up for specific parameter (<code>ref</code> by default) in the request. If found, it persists affiliate tag, referring url and time in a cookie for later use.
 
+This fork
+---------
+
+Allows using multiple instances of the middleware to track different parameters by adding two new configuration options: <code>:scope</code> and <code>:var_name</code>.
+
+Therefore, initializing the middleware like this:
+
+    # Rails 3 App - in config/application.rb
+    config.middleware.use Rack::Affiliates, { :scope => 'referrer', :var_name => 'referral', :param => 'ref', :ttl => 6.months }
+    config.middleware.use Rack::Affiliates, { :scope => 'utm', :var_name => 'source', :param => 'utm_source', :ttl => 6.months }
+    config.middleware.use Rack::Affiliates, { :scope => 'utm', :var_name => 'campaign', :param => 'utm_campaign', :ttl => 6.months }
+    config.middleware.use Rack::Affiliates, { :scope => 'utm', :var_name => 'medium', :param => 'utm_medium', :ttl => 6.months }
+
+Allows for something like this in your controller:
+
+    @referral = request.env['referrer.referral']
+    @referral_time = request.env['referrer.time']
+    @utm_source = request.env['utm.source'] if request.env['utm.source']
+    @utm_medium = request.env['utm.medium'] if request.env['utm.medium']
+    @utm_campaign = request.env['utm.campaign'] if request.env['utm.campaign']
+    
+
 Common Scenario
 ---------------
 
@@ -18,9 +40,9 @@ Affiliate links tracking is very common task if you want to promote your online 
 Installation
 ------------
 
-Piece a cake:
+In your Gemfile:
 
-    gem install rack-affiliates
+    gem 'rack-affiliates', :git => 'git@github.com:rilla/rack-affiliates.git'
 
 
 Rails 3 Example Usage
